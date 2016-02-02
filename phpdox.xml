@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--  This is a skeleton phpDox config file - Check http://phpDox.de for latest version and more info -->
+<phpdox xmlns="http://xml.phpdox.net/config" silent="false">
+    <!--  @silent: true | false to enable or disable visual output of progress -->
+
+    <!-- Additional bootstrap files to load for additional parsers, enrichers and/or engines -->
+    <!-- Place as many require nodes as you feel like in this container -->
+    <!-- syntax: <require file="/path/to/file.php" /> -->
+    <bootstrap />
+
+    <!-- A phpDox project to process, you can have multiple projects in one config file -->
+    <project name="TextDB" source="${basedir}/src" workdir="${basedir}/build/phpdox">
+        <collector publiconly="false" backend="parser" encoding="auto">
+            <include mask="*.php" />
+            <exclude mask="" />
+            <inheritance resolve="true">
+                <!--  @resolve - Flag to enable/disable resolving of inheritance -->
+
+                <!--  You can define multiple (external) dependencies to be included -->
+                <!--  <dependency  path="" -->
+                <!--    @path  - path to a directory containing an index.xml for a dependency project -->
+            </inheritance>
+
+        </collector>
+
+        <generator output="${basedir}/build">
+            <enrich base="${basedir}/build">
+                <!-- @base - (Base-)Directory of datafiles used for enrich process -->
+
+                <!--<source type="...">-->
+                <!-- @type - the handler for the enrichment -->
+                <!--         known types by default are: build, checkstyle, git, phpcs, phploc, phpunit, pmd -->
+
+                <!-- every enrichment source can have additional configuration nodes, most probably need a logfile -->
+                <!-- <file name="path/to/log.xml" /> -->
+                <!--</source> -->
+
+                <!-- add phploc output -->
+                <!--
+                <source type="phploc" />
+                -->
+
+                <!-- git vcs information -->
+                <!--
+                <source type="git">
+                    <git binary="/usr/bin/git" />
+                    <history enabled="true" limit="15" cache="${phpDox.project.workdir}/gitlog.xml" />
+                </source>
+                -->
+
+                <!-- PHP Code Sniffer findings -->
+                <!--
+                <source type="phpcs">
+                    <file name="logs/phpcs.xml" />
+                </source>
+                -->
+
+                <!-- PHPMessDetector -->
+                <!--
+                <source type="pmd">
+                    <file name="pmd.xml" />
+                </source>
+                -->
+
+                <!-- PHPUnit Coverage XML -->
+                <!-- <source type="phpunit">  -->
+                    <!-- <coverage path="" /> -->
+                    <!--           @path - the directory where the xml code coverage report can be found -->
+                    <!--<filter directory="${phpDox.project.source}" />-->
+                    <!-- @directory - path of the phpunit config whitelist filter directory -->
+                <!--</source>-->
+                <!--
+                <source type="phpunit">
+                    <filter directory="${phpDox.project.source}" />
+                </source>
+                -->
+
+            </enrich>
+
+            <build engine="html" enabled="true" output="api">
+                <template dir="${phpDox.home}/templates/html" />
+                <file extension="html" />
+            </build>
+
+        </generator>
+    </project>
+
+</phpdox>

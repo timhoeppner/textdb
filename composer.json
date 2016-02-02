@@ -1,0 +1,60 @@
+{
+  "name": "timhoeppner/textdb",
+  "description": "Pure PHP text database system",
+  "version": "4.4.4",
+  "type": "library",
+  "keywords": [
+    "database",
+    "nosql",
+    "unittesting"
+  ],
+  "homepage": "https://github.com/timhoeppner/textdb",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Tim Hoeppner",
+      "email": "timhoeppner@gmail.com",
+      "homepage": "http://github.com/timhoeppner",
+      "role": "Developer"
+    },
+    {
+      "name": "Jerroyd Moore",
+      "email": "jerroydmoore@gmail.com",
+      "homepage": "http://github.com/jerroydmoore",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "timhoeppner@gmail.com",
+    "issues": "https://github.com/timhoeppner/textdb/issues",
+    "wiki": "https://github.com/timhoeppner/textdb/wiki",
+    "source": "https://github.com/timhoeppner/textdb",
+    "docs": "https://github.com/timhoeppner/textdb/wiki"
+  },
+  "require": {
+    "php": "~5.5"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "4.8.21",
+    "squizlabs/php_codesniffer": "2.*",
+    "phploc/phploc": "*",
+    "pdepend/pdepend": "2.2.1",
+    "phpmd/phpmd": "@stable",
+    "sebastian/phpcpd": "*",
+    "theseer/phpdox": "0.8.1.1"
+  },
+  "suggest": {
+  },
+  "autoload": {
+    "psr-4": {
+      "TextDb\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "TextDb\\Test\\": "tests/"
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

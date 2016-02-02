@@ -1,137 +1,85 @@
 <?php
-/*
- Text Database system (v.4)
- Author: Pilot and Rebles on PHP Outburst http://myupb.com
+namespace TextDb;
 
- The idea of this version is to offer a quicker and more complex way of dealing with the files
- this version of textdb uses the extension tdb for all its database files.
-
- 4.4.4 update: Fixed MEMO corruption bug:
- Fixed an if-then statement that checks if the index link list contained a cycle.
- Fixed an if-then statement that updates the last written block's index pointer to the block that is represented by EOF.  This statement only executes if there are no more free blocks in the file.  When writing the EOF index, it might right pad the index with an incorrect number of spaces, which may result in a corrupted index, which may result in data corruption.
-
- 4.4.3 update: added SELECT columns functionability when retrieving record(s)
- bug fixed with isTable()
- renamed sortAndBuild() to sort(); left placeholder for sortAndBuild() for backwards compadibility
-
- 4.4.2 update: query results cached
- memo file's first unused block cached
- more bugs fixed
- rewrote memo functions; same process
- tdb::sendError now can use custom error handlers
- TDB_ERROR_INCLUDE_ORIGIN constant added
- TDB_PRINT_ERRORS constant added
- tdb::define_error_handler();
- TDB Errors are assigned Error numbers and include the line the error was generated on
-
- 4.4.1 update: sortAndBuild() clears record reference cache
- minor bug fixed in removeTable()
- minor bug fixed in listRec()
- debugging code removed from memo functions
-
- 4.4.0 update: NOT COMPADABLE WITH PREVIOUS VERSIONS
- Separated memo's into blocks
- Added readMemo(), writeMemo(), and deleteMemo(); removed rewriteMemo()
- Changed record deletion and storage method; multiple functions affected;
- Added the extention ".ta" to the main table file.
- Added Db's name to tables' names to allow multiple Dbs to exist in one directory
- Added descriptions to functions
- check() now validates workingDir, Db, and Fp
-
- 4.3.5 update: added rewriteMemo()
-
- 4.3.4 update: added support for memo field in query()
-
- 4.3.3 update: added $start and $howmany in query()
- added editField() and removeField()
-
- 4.3.2 update: limited file locking
- fixed bug with removing databases
- added '<' '>' usage in query()
-
- 4.3 update: all chars are allowed in string fields now
- header buffering
- wrote new query() algorithm increasing query speeds over 3 times
-
- 4.2 update: removed $start and $howmany from basicQuery()
- added query()
- */
-
-/*
- variable types:
- string - anything goes, length restriction (>1 bytes)
- number - numbers only (some symbols allowed), length restriction (>1 bytes)
- memo - anything goes, NO length restriction (7 bytes)
- id - auto-increment id field used to retrieve specific records (7 bytes)
- */
+	/*
+     variable types:
+     string - anything goes, length restriction (>1 bytes)
+     number - numbers only (some symbols allowed), length restriction (>1 bytes)
+     memo - anything goes, NO length restriction (7 bytes)
+     id - auto-increment id field used to retrieve specific records (7 bytes)
+     */
 
 //TDB will print errors instead of using trigger_error() or a user defined error handler
+/**
+ *
+ */
 DEFINE('TDB_PRINT_ERRORS', FALSE);
 //TDB will include the file and line number of your script that led to the error
+/**
+ *
+ */
 DEFINE('TDB_ERROR_INCLUDE_ORIGIN', TRUE);
 
+/**
+ * Class tdb
+ * @package TextDb
+ */
 class tdb {
-	var $fp = array();     // allowing for multiply file pointers
-	var $workingDir;       // working directory
-	var $Db;               // database.tdb
-	var $Tables;           // list of tables in the database
-	var $error_handler = false; // user defined error handler
+	/**
+	 * @var array
+	 */
+	protected $fp = array();     // allowing for multiply file pointers
+	/**
+	 * @var string
+	 */
+	protected $workingDir;       // working directory
+	/**
+	 * @var string
+	 */
+	protected $Db;               // database.tdb
+	/**
+	 * @var array
+	 */
+	protected $Tables;           // list of tables in the database
+	/**
+	 * @var bool
+	 */
+	protected $error_handler = false; // user defined error handler
 
-	var $_header = array(); // cache publics
-	var $_query = array();
-	var $_fileId = array();
-	var $_ref = array();
-	var $_firstBlankMemoBlockRef = array();
+	/**
+	 * @var array
+	 */
+	protected $_header = array(); // cache publics
+	/**
+	 * @var array
+	 */
+	protected $_query = array();
+	/**
+	 * @var array
+	 */
+	protected $_fileId = array();
+	/**
+	 * @var array
+	 */
+	protected $_ref = array();
+	/**
+	 * @var array
+	 */
+	protected $_firstBlankMemoBlockRef = array();
 
 	//Does not store FPs but physical file addy, does not clear for cleanUp() etc.
 	//prompts statsclearcache()
-	var $editedTable = array();
-
-	/*
-	 Functions:
-	 tdb($dir,$db) - the working directory, must be a valid directory, must be set before anything else is used. Format /path/to/folder/ (note the end slash)
-
-	 createDatabase($dir, $filename) - .tdb is appended automatically if you did not add it
-	 removeDatabase() - it will remove the database as well as ALL the tables, be careful
-
-	 createTable($fp,array(array(fieldname, type, size)), memo_block_size) - creates a table using $fp and the field names
-	 removeTable($tableName) - removes a table from a database
-
-	 addField($fp, array(fieldname, type, size)) - creates a new field in the table
-	 editField($fp, $field, array(newname, newtype, newsize)) - edits an existing field
-	 removeField($fp, $field) - removes a field from a table
-
-	 reBuild($fp) - rebuilds the database after any editing
-	 sortAndBuild($fp, $fieldName, $direction="ASC") - sorts the records and rebuilds the table
-
-	 basicQuery($fp, $field, $value, $start=1, $howmany=-1, $fields) - searches for $value in $field
-	 query($fp, $query[[[, $start], $howmany], $fields]) - runs a query, syntax will be documented
-	 listRec($fp, $start[[, $howmany], $fields]) - returns a specific amount of records
-	 get($fp, $id, $fields) - returns the record with the id of $id (file id from table.ref)
-
-	 getNumberOfRecords() - returns the number of records in the table
-	 getTableList() - returns a list of avaiable tables in the database
-	 getFieldList($fp) - returns a list of all the fields in a table
-
-	 add($fp, array("fieldname" => "value", ...)) - add a record
-	 edit($fp, $id, array("fieldname" => "newvalue")[, $needRWMemo) - edits a record
-	 delete($fp, $id) - deletes a record
-
-	 readMemo($fp, $index, $header) - retrieves memo data in $fp starting from $index
-	 writeMemo($fp, $data, $header) - writes in memo file of $fp
-	 deleteMemo($fp, $index, $header) - deletes memo data in $fp, using $index as a referance
-	 isTable($table) - returns true if $table is in $db
-	 fileIdById($fp, $id) - gets the file id by the record id
-	 parseRecord($rawRecord, $header) - parses a raw record
-	 readHeader() - reads the header.
-	 cleanUp() - releases all the fp vars
-	 setFp($fp, $table) - sets a filepointer up
-	 check() - validates Db, workingDir, tables, and $fp
-	 sendError($errMsg) - sends a error message
-	 define_error_handler(&$object, $function) - Defines an error handler
-	 version() - returns the version
+	/**
+	 * @var array
 	 */
+	protected $editedTable = array();
 
+	/**
+	 * tdb constructor.
+	 */
+	public function __construct()
+	{
+	}
 
 	/**
 	 * Defines the directory and database.  Must be ran before most functions can function.
@@ -176,7 +124,7 @@ class tdb {
 	 * Creates a database.  Run tdb() before handling the database
 	 *
 	 * @param string $dir
-	 * @param string $name
+	 * @param string $filename
 	 * @return bool
 	 */
 	function createDatabase($dir, $filename) {
@@ -454,11 +402,9 @@ class tdb {
 	}
 
 	/**
-	 * Creates a table.
-	 *
-	 * @param string $table
-	 * @param array $fields
-	 * @param int $block_length[optional]
+	 * @param $table
+	 * @param $fields
+	 * @param string $block_length
 	 * @return bool
 	 */
 	function createTable($table, $fields, $block_length="100") {
@@ -626,7 +572,7 @@ class tdb {
 	 * Edits a field's parameters
 	 *
 	 * @param string $fp
-	 * @param name $oldfield
+	 * @param string $oldfield
 	 * @param array $field
 	 * @return bool
 	 */
@@ -908,7 +854,6 @@ class tdb {
 	 *
 	 * @param string $fp
 	 * @param int $id
-	 * @param bool $runRebuild[Optional]
 	 * @return bool
 	 */
 	function delete($fp, $id) {
@@ -961,7 +906,7 @@ class tdb {
 	 *
 	 * @param string $fp
 	 * @param string $fieldName
-	 * @param string $direction[Optional]
+	 * @param string $direction
 	 * @return bool
 	 */
 	function sortAndBuild($fp, $fieldName, $direction="ASC") {
@@ -970,13 +915,13 @@ class tdb {
 	}
 	//new sys not avail.
 	/**
-	* Sorts records in a specific order based on a field
-	*
-	* @param string $fp
-	* @param string $fieldName
-	* @param string $direction[Optional]
-	* @return bool
-	*/
+	 * Sorts records in a specific order based on a field
+	 *
+	 * @param string $fp
+	 * @param string $fieldName
+	 * @param string $direction[Optional]
+	 * @return bool
+	 */
 	function sort($fp, $fieldName, $direction="ASC") {
 		if(FALSE === $this->check(__LINE__, $fp)) return false;
 
@@ -1064,7 +1009,7 @@ class tdb {
 	 * Add a record to table $fp, using values from $recArr
 	 *
 	 * @param string $fp
-	 * @param array input
+	 * @param array $recArr
 	 * @return bool false on fail, int ID on success
 	 */
 	function add($fp, $recArr) {
@@ -1195,11 +1140,10 @@ class tdb {
 	}
 
 	/**
-	 * retrieves a file based on its ID
-	 *
-	 * @param string $fp
-	 * @param int $id
-	 * @return array record on success, bool false on fail
+	 * @param $fp
+	 * @param $id
+	 * @param array $fields
+	 * @return array|bool
 	 */
 	function get($fp, $id, $fields=array('*')) {
 		if(FALSE === ($fileId = $this->fileIdById($fp, $id))) {
@@ -1231,12 +1175,12 @@ class tdb {
 	}
 
 	/**
-	 * Retrieves records in sequencial order
+	 * Retrieves records in sequential order
 	 *
 	 * @param string $fp
 	 * @param int $start
-	 * @param int $howmany[Optional]
-	 * @param array $fields[Optional]
+	 * @param int $howmany
+	 * @param array $fields
 	 * @return array records on success, bool false on fail
 	 */
 	function listRec($fp, $start, $howmany=-1, $fields=array("*")) {
@@ -1383,7 +1327,7 @@ class tdb {
 	 * @param string $fp
 	 * @param string $query
 	 * @param int $start[optional]
-	 * @param in $howmany[optional]
+	 * @param int $howmany[optional]
 	 * @return bool false on fail, array records on success
 	 */
 	function query($fp, $query, $start=1, $howmany=-1, $fields=array("*")) {
@@ -1393,11 +1337,11 @@ class tdb {
 		if(!empty($this->_query[$fp])) {
 			foreach($this->_query[$fp] as $cached_query) {
 				if(
-				$cached_query["query_string"] == $query &&
-				$cached_query["start"] == $start &&
-				$cached_query["howmany"] == $howmany &&
-				$cached_query["fields"] == $tmpfields)
-				return $cached_query["result"];
+					$cached_query["query_string"] == $query &&
+					$cached_query["start"] == $start &&
+					$cached_query["howmany"] == $howmany &&
+					$cached_query["fields"] == $tmpfields)
+					return $cached_query["result"];
 			}
 		}
 		$original_start = $start;
@@ -1520,10 +1464,10 @@ class tdb {
 
 		//cache the result
 		$this->_query[$fp][] = array("result" => $return,
-        "query_string" => $original_query,
-        "start" => $original_start,
-        "howmany" => $original_howmany,
-        "fields" => $original_fields);
+			"query_string" => $original_query,
+			"start" => $original_start,
+			"howmany" => $original_howmany,
+			"fields" => $original_fields);
 
 		if(empty($return)) return false;
 		return $return;
@@ -1534,9 +1478,9 @@ class tdb {
 	 *
 	 * @param string $fp
 	 * @param string $field
-	 * @param any $value
+	 * @param string $value
 	 * @param int $start[optional]
-	 * @param in $howmany[optional]
+	 * @param int $howmany[optional]
 	 * @return bool false on fail, array records on success
 	 */
 	function basicQuery($fp, $field, $value, $start = 1, $howmany = -1, $fields=array('*')) {
@@ -1673,7 +1617,7 @@ class tdb {
 	 * Writes the data into the memo file
 	 *
 	 * @param string $fp
-	 * @param string $data
+	 * @param string $oriData
 	 * @param array $header
 	 * @return int
 	 */
@@ -1749,7 +1693,7 @@ class tdb {
 	 * Checks to validate a working database, directory, and [optional]table
 	 *
 	 * @param int $line
-	 * @param string $fp[optional]
+	 * @param string $fp
 	 * @return bool
 	 */
 	function check($line, $fp = null) {
@@ -1783,10 +1727,9 @@ class tdb {
 	}
 
 	/**
-	 * triggers an error on behalf of the tdb.class.php
-	 *
-	 * @param string $errMsg
-	 * @param int $line[Optional]
+	 * @param $errno
+	 * @param $errMsg
+	 * @param string $line
 	 */
 	function sendError($errno, $errMsg, $line = '') {
 		if(TDB_ERROR_INCLUDE_ORIGIN == TRUE) {
@@ -1795,7 +1738,7 @@ class tdb {
 			$errMsg .= $error_origin;
 		}
 		if(TDB_PRINT_ERRORS === TRUE) print('<b>Text Database Error</b>: '.$errMsg. ((($line != null || $line != '') && (TDB_ERROR_INCLUDE_ORIGIN === false)) ? ' near line '.$line : '').'<br />');
-		elseif($this->error_handler !== FALSE) call_user_func_array($this->error_handler, array($errno, $errMsg, 'tdb.class.php', $line));
+		elseif($this->error_handler !== FALSE) call_user_func_array($this->error_handler, array($errno, $errMsg, 'tdb.php', $line));
 		else trigger_error('<b>Text Database Error</b>: '.$errMsg. (($line != null || $line != '') ? ' near line '.$line : ''));
 	}
 
@@ -1818,10 +1761,13 @@ class tdb {
 		return "4.4.4";
 	}
 
+	/**
+	 * @param $text
+	 * @return mixed
+	 */
 	function deXSS($text) {
 		//echo "$text::".substr_count('&lt;x&gt;',$text)."<br>";
 
 		return str_replace('&lt;x&gt;','',$text);
 	}
 }
-?>
