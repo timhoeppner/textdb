@@ -150,6 +150,7 @@ class tdb {
 				$f = fopen($dir.$filename, "wb");
 				fwrite($f, "");
 				fclose($f);
+				$this->tdb($dir, $filename);
 				return true;
 			}
 		} else {
