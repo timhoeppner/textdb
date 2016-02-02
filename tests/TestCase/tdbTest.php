@@ -12,16 +12,73 @@ use TextDb\tdb;
 
 class tdbTest extends \PHPUnit_Framework_TestCase
 {
-    // TODO setup function should create temporary directories
+    /** @var tdb */
+    public $tdb;
+
+    /**
+     * @var string
+     */
+    public $tmpFolder = "./tmp";
+
+    /** @var string */
+    public $tmpNotWritableFolder;
+
+    /** @var string */
+    public $dbName;
+
+    protected function setUp()
+    {
+        parent::setUp();
+
+        $this->tdb = new tdb();
+
+        // Create the tmp directory if it doesn't exist
+        if(!file_exists($this->tmpFolder)) {
+            mkdir($this->tmpFolder);
+        }
+
+        $this->tmpNotWritableFolder = $this->tmpFolder ."/notWritable";
+        if(!file_exists($this->tmpNotWritableFolder)) {
+            mkdir($this->tmpNotWritableFolder);
+        }
+
+        $this->dbName = uniqid();
+    }
+
+    protected function tearDown()
+    {
+        parent::tearDown();
+    }
+
 
     public function testCreateDatabase()
     {
-        $tdb = new tdb();
+        $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
+        $this->assertEquals(true, file_exists($this->tmpFolder ."/$this->dbName.tdb"));
 
-        $tdb->createDatabase("./tmp/", "test");
-        $this->assertEquals(true, file_exists("./tmp/test.tdb"));
+        $this->tdb->removeDatabase();
+        $this->assertEquals(false, file_exists($this->tmpFolder ."/$this->dbName.tdb"));
+    }
 
-        $tdb->removeDatabase();
-        $this->assertEquals(false, file_exists("./tmp/test.tdb"));
+    public function testCreateDatabaseAlreadyExists()
+    {
+        $this->setExpectedException('\TextDb\Exception\DatabaseExistsException');
+
+        $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
+        $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
+    }
+
+    public function testCreateDatabaseNotWritable()
+    {
+        $this->setExpectedException('\TextDb\Exception\NotWritableException');
+
+        $this->tdb->createDatabase($this->tmpNotWritableFolder, $this->dbName);
+    }
+
+    public function testCreateDatabaseInvalidDirectory()
+    {
+        $this->setExpectedException('\TextDb\Exception\InvalidDirectoryException');
+
+        $this->tdb->createDatabase($this->tmpFolder ."/path/doesnt/exist", $this->dbName);
     }
 }

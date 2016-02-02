@@ -13,6 +13,10 @@ namespace TextDb;
 /**
  *
  */
+use TextDb\Exception\DatabaseExistsException;
+use TextDb\Exception\InvalidDirectoryException;
+use TextDb\Exception\NotWritableException;
+
 DEFINE('TDB_PRINT_ERRORS', FALSE);
 //TDB will include the file and line number of your script that led to the error
 /**
@@ -125,7 +129,9 @@ class tdb {
 	 *
 	 * @param string $dir
 	 * @param string $filename
-	 * @return bool
+	 * @throws DatabaseExistsException if the database already exists
+	 * @throws NotWritableException if the directory isn't writable
+	 * @throws InvalidDirectoryException if the directory doesn't exist
 	 */
 	function createDatabase($dir, $filename) {
 		$dir = str_replace("../", "", $dir);
@@ -138,24 +144,20 @@ class tdb {
 		}
 
 		if(file_exists($dir.$filename)) {
-			$this->sendError(E_WARNING, "Database already exists", __LINE__);
-			return false;
+			throw new DatabaseExistsException();
 		}
 
 		if(is_dir($dir)) {
 			if(!is_writable($dir)) {
-				$this->sendError(E_ERROR, "Fatal: $dir is not writable, try chmod 777 if 666 does not work.", __LINE__);
-				return false;
+				throw new NotWritableException();
 			} else {
 				$f = fopen($dir.$filename, "wb");
 				fwrite($f, "");
 				fclose($f);
 				$this->tdb($dir, $filename);
-				return true;
 			}
 		} else {
-			$this->sendError(E_ERROR, "Failed creating database, $dir is not a valid path.", __LINE__);
-			return false;
+			throw new InvalidDirectoryException();
 		}
 	}
 
