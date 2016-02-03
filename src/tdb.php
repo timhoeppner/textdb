@@ -15,7 +15,11 @@ namespace TextDb;
  */
 use TextDb\Exception\DatabaseExistsException;
 use TextDb\Exception\InvalidDirectoryException;
+use TextDb\Exception\InvalidFilePointerException;
 use TextDb\Exception\NotWritableException;
+use TextDb\Exception\InvalidTableException;
+use TextDb\Exception\UndefinedDatabaseException;
+use TextDb\Exception\UndefinedWorkingDirectoryException;
 
 DEFINE('TDB_PRINT_ERRORS', FALSE);
 //TDB will include the file and line number of your script that led to the error
@@ -92,7 +96,7 @@ class tdb {
 	 * @param string $db
 	 * @return bool
 	 */
-	function tdb($dir="", $db="") {
+	public function tdb($dir="", $db="") {
 		if($dir == "" && $db == "") return false;
 
 		$dir = str_replace("../", "", $dir);
@@ -133,7 +137,7 @@ class tdb {
 	 * @throws NotWritableException if the directory isn't writable
 	 * @throws InvalidDirectoryException if the directory doesn't exist
 	 */
-	function createDatabase($dir, $filename) {
+	public function createDatabase($dir, $filename) {
 		$dir = str_replace("../", "", $dir);
 		if(substr($dir, -1) != "/") {
 			$dir .= "/";
@@ -166,8 +170,8 @@ class tdb {
 	 *
 	 * @return bool
 	 */
-	function removeDatabase() {
-		if(FALSE === $this->check(__LINE__)) return false;
+	public function removeDatabase() {
+		$this->check();
 		foreach($this->Tables as $ta) {
 			if(trim($ta) != "") $this->removeTable($ta);
 		}
@@ -181,13 +185,12 @@ class tdb {
 	 * @param string $tableName
 	 * @return bool
 	 */
-	function removeTable($tableName) {
-		if(FALSE === $this->check(__LINE__)) return false;
+	public function removeTable($tableName) {
+		$this->check();
 
 		if(substr($tableName, 0, (strlen($this->Db)-4)) != substr($this->Db, 0, -4)) $tableName = substr($this->Db, 0, -4).'_'.$tableName;
 		if(!$this->isTable($tableName)) {
-			$this->sendError(E_WARNING, "Table ($tableName) does not exist in the database.", __LINE__);
-			return false;
+			throw new InvalidTableException();
 		}
 
 		foreach($this->Tables as $key => $ta) {
@@ -215,27 +218,9 @@ class tdb {
 	 * @param string $fp
 	 * @return int count on success, bool false on fail
 	 */
-	function getNumberOfRecords($fp) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+	public function getNumberOfRecords($fp) {
+		$this->check($fp);
 
-		/*$header = array();
-		 $this->readHeader($fp, $header);
-
-		 $eRecSize = filesize($this->fp[$fp].'.ta') - $header["recPos"];
-		 $eRecCount = $eRecSize / $header["recLen"];
-
-		 $delete = 0;
-		 $next = $header['lastBlank'];
-		 $f = fopen($this->fp[$fp].'.ta', 'rb');
-		 while($next != -1) {
-		 $delete++;
-		 fseek($f, $this->bytesToSeek($fp, $header, $next));
-		 $next = (int)trim(fread($f, 8), chr(24));
-		 }
-		 $eRecCount = $eRecCount - $delete;
-
-		 return $eRecCount; */
-		//Shorter version?
 		return substr_count($this->get_ref_data($fp), chr(31));
 	}
 
@@ -245,7 +230,7 @@ class tdb {
 	 * @return array tables on success, bool false on fail
 	 */
 	function getTableList() {
-		if(FALSE === $this->check(__LINE__)) return false;
+		$this->check();
 		return $this->Tables;
 	}
 
@@ -256,7 +241,7 @@ class tdb {
 	 * @return array fields on success, bool false on fail
 	 */
 	function getFieldList($fp) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$header = array();
 		$this->readHeader($fp, $header);
@@ -279,7 +264,7 @@ class tdb {
 	 * @return bool
 	 */
 	function readHeader($fp, &$header) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		if(isset($this->_header[$fp])) {
 			$header = $this->_header[$fp];
@@ -395,7 +380,7 @@ class tdb {
 	 * @return bool
 	 */
 	function isTable($table) {
-		if(FALSE === $this->check(__LINE__)) return false;
+		$this->check();
 		if(substr($table, 0, (strlen($this->Db) -4)) != substr($this->Db, 0, -4)) $table = substr($this->Db, 0, -4).'_'.$table;
 		foreach($this->Tables as $ta) {
 			if($ta == $table) return true;
@@ -411,7 +396,7 @@ class tdb {
 	 * @return bool
 	 */
 	function createTable($table, $fields, $block_length="100") {
-		if(FALSE === $this->check(__LINE__)) return false;
+		$this->check();
 		$block_length = $block_length + 8; //To store the next fp of every block + end of text chr
 		if(substr($table, 0, (strlen($this->Db) -4) != substr($this->Db, 0, -4))) $table = substr($this->Db, 0, -4).'_'.$table;
 
@@ -477,7 +462,7 @@ class tdb {
 	 * @return bool
 	 */
 	function addField($fp, $field) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$header = array();
 		$this->readHeader($fp, $header);
@@ -580,7 +565,7 @@ class tdb {
 	 * @return bool
 	 */
 	function editField($fp, $oldfield, $field=array()) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$header = array();
 		$this->readHeader($fp, $header);
@@ -708,7 +693,7 @@ class tdb {
 	 * @return bool
 	 */
 	function removeField($fp, $field) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$header = array();
 		$this->readHeader($fp, $header);
@@ -799,7 +784,7 @@ class tdb {
 	 * @return bool
 	 */
 	function edit($fp, $id, $recArr) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$header = array();
 
@@ -860,7 +845,7 @@ class tdb {
 	 * @return bool
 	 */
 	function delete($fp, $id) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		if(FALSE === ($fileId = $this->fileIdById($fp, $id))) {
 			$this->sendError(E_WARNING, "Unable to execute delete().  Unable to retrieve fileID", __LINE__);
@@ -926,7 +911,7 @@ class tdb {
 	 * @return bool
 	 */
 	function sort($fp, $fieldName, $direction="ASC") {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$header = array();
 		$this->readHeader($fp, $header);
@@ -1015,8 +1000,8 @@ class tdb {
 	 * @param array $recArr
 	 * @return bool false on fail, int ID on success
 	 */
-	function add($fp, $recArr) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+	public function add($fp, $recArr) {
+		$this->check($fp);
 
 		$header = array();
 		$this->readHeader($fp, $header);
@@ -1111,7 +1096,7 @@ class tdb {
 	 * @return int fileID on success, bool false on fail
 	 */
 	function fileIdById($fp, $id) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$ref_data = $this->get_ref_data($fp);
 		$ref_data = chr(31).$ref_data;
@@ -1137,7 +1122,7 @@ class tdb {
 	 * @return string
 	 */
 	function get_ref_data($fp) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 		if(!isset($this->_ref[$fp])) $this->_ref[$fp] = file_get_contents($this->fp[$fp].'.ref');
 		return $this->_ref[$fp];
 	}
@@ -1187,7 +1172,7 @@ class tdb {
 	 * @return array records on success, bool false on fail
 	 */
 	function listRec($fp, $start, $howmany=-1, $fields=array("*")) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 		$return = array();
 		$pos2 = 0;
 		$pos1 = 0;
@@ -1334,7 +1319,7 @@ class tdb {
 	 * @return bool false on fail, array records on success
 	 */
 	function query($fp, $query, $start=1, $howmany=-1, $fields=array("*")) {
-		if(FALSE === $this->check(__LINE__, $fp)) return false;
+		$this->check($fp);
 
 		$tmpfields = implode(",", $fields);
 		if(!empty($this->_query[$fp])) {
@@ -1699,34 +1684,28 @@ class tdb {
 	 * @param string $fp
 	 * @return bool
 	 */
-	function check($line, $fp = null) {
+	function check($fp = null) {
 		clearstatcache();
 		if(!isset($this->Db) || $this->Db == '') {
-			$this->sendError(E_USER_ERROR, 'Fatal: the database is undefined', $line);
-			return false;
+			throw new UndefinedDatabaseException();
 		}
 		if(!isset($this->workingDir) || $this->workingDir == '') {
-			$this->sendError(E_USER_ERROR, 'Fatal: the working directory is undefined', $line);
-			return false;
+			throw new UndefinedWorkingDirectoryException();
 		}
 		if(!file_exists($this->workingDir.$this->Db)) {
-			$this->sendError(E_USER_ERROR, 'The database('.$this->workingDir.$this->Db.') does not exist', $line);
+			throw new DatabaseExistsException();
 		}
 		if($fp != null) {
 			if($fp == '') {
-				$this->sendError(E_USER_ERROR, 'The $fp is not set', $line);
-				return false;
+				throw new InvalidFilePointerException();
 			}
 			if(!isset($this->fp[$fp]) || $this->fp[$fp] == '') {
-				$this->sendError(E_USER_ERROR, '"'.$fp.'" was not set as a valid table through setFp()', $line);
-				return false;
+				throw new InvalidFilePointerException();
 			}
 			if(!file_exists($this->fp[$fp].'.ta')) {
-				$this->sendError(E_USER_NOTICE, 'The table('.$this->fp[$fp].') does not exist', $line);
-				return false;
+				throw new InvalidTableException();
 			}
 		}
-		return true;
 	}
 
 	/**

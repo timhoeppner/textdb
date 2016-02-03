@@ -10,7 +10,7 @@ namespace TextDb\Test;
 
 use TextDb\tdb;
 
-class tdbTest extends \PHPUnit_Framework_TestCase
+class tdbDatabaseTest extends \PHPUnit_Framework_TestCase
 {
     /** @var tdb */
     public $tdb;
@@ -51,7 +51,7 @@ class tdbTest extends \PHPUnit_Framework_TestCase
     }
 
 
-    public function testCreateDatabase()
+    public function testCreateAndRemoveDatabase()
     {
         $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
         $this->assertEquals(true, file_exists($this->tmpFolder ."/$this->dbName.tdb"));
@@ -80,5 +80,41 @@ class tdbTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException('\TextDb\Exception\InvalidDirectoryException');
 
         $this->tdb->createDatabase($this->tmpFolder ."/path/doesnt/exist", $this->dbName);
+    }
+
+    public function testRemoveDatabaseWithTables()
+    {
+        $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
+
+        $this->tdb->createTable("test_table", [
+            [
+                "id",
+                "id",
+            ],
+            [
+                "name",
+                "string",
+                50
+            ]
+        ]);
+
+        $this->assertEquals(true, file_exists($this->tmpFolder . "/" . $this->dbName . "_test_table.ta"));
+        $this->assertEquals(true, file_exists($this->tmpFolder . "/" . $this->dbName . "_test_table.memo"));
+        $this->assertEquals(true, file_exists($this->tmpFolder . "/" . $this->dbName . "_test_table.ref"));
+
+        $this->tdb->removeDatabase();
+
+        $this->assertEquals(false, file_exists($this->tmpFolder . "/" . $this->dbName . "_test_table.ta"));
+        $this->assertEquals(false, file_exists($this->tmpFolder . "/" . $this->dbName . "_test_table.memo"));
+        $this->assertEquals(false, file_exists($this->tmpFolder . "/" . $this->dbName . "_test_table.ref"));
+    }
+
+    public function testRemoveNonExistingTable()
+    {
+        $this->setExpectedException('\TextDb\Exception\InvalidTableException');
+
+        $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
+        $this->tdb->removeTable("invalid_table");
+        $this->tdb->removeDatabase();
     }
 }
