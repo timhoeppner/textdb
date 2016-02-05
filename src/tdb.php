@@ -104,7 +104,7 @@ class tdb {
 		if(substr($db, -4) != '.tdb') $db .= '.tdb';
 		if(is_dir($dir)) {
 			if(!is_writable($dir)) {
-				$this->sendError(E_ERROR, "Fatal: Working directory ($dir) is not writable, try chmod 777 if 666 does not work.", __LINE__);
+				throw new NotWritableException();
 			} else {
 				if(is_writable($dir.$db)) {
 					if(filesize($dir.$db) != 0) {
@@ -117,13 +117,11 @@ class tdb {
 					$this->workingDir = $dir;
 					return true;
 				} else {
-					$this->sendError(E_ERROR, "Fatal: Database ($db) is not writable, try chmod 777 if 666 does not work.", __LINE__);
-					return false;
+					throw new NotWritableException();
 				}
 			}
 		} else {
-			$this->sendError(E_USER_ERROR, "Failed setting working directory ($dir), not a valid path.", __LINE__);
-			return false;
+			throw new InvalidDirectoryException();
 		}
 		return true;
 	}

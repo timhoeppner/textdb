@@ -272,6 +272,10 @@
   <property name="phpdox.done" value="true"/>
  </target>
 
+ <target name="build-success">
+  <get src="https://img.shields.io/badge/build-passing-green.svg" dest="${composer}"/>
+ </target>
+
  <target name="-check-failure">
   <fail message="PHPUnit did not finish successfully">
    <condition>

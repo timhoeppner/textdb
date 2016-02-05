@@ -39,7 +39,7 @@ class tdbTableTest extends \PHPUnit_Framework_TestCase
 
         $this->tmpNotWritableFolder = $this->tmpFolder ."/notWritable";
         if(!file_exists($this->tmpNotWritableFolder)) {
-            mkdir($this->tmpNotWritableFolder);
+            mkdir($this->tmpNotWritableFolder, 0444);
         }
 
         $this->dbName = uniqid();

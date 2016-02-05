@@ -33,13 +33,18 @@ class tdbDatabaseTest extends \PHPUnit_Framework_TestCase
         $this->tdb = new tdb();
 
         // Create the tmp directory if it doesn't exist
-        if(!file_exists($this->tmpFolder)) {
+        if (!file_exists($this->tmpFolder)) {
             mkdir($this->tmpFolder);
         }
 
+        if (!file_exists($this->tmpFolder . "/notwritable.db")) {
+            touch($this->tmpFolder . "/notwritable.db");
+            chmod($this->tmpFolder . "/notwritable.db", 0444);
+        }
+
         $this->tmpNotWritableFolder = $this->tmpFolder ."/notWritable";
-        if(!file_exists($this->tmpNotWritableFolder)) {
-            mkdir($this->tmpNotWritableFolder);
+        if (!file_exists($this->tmpNotWritableFolder)) {
+            mkdir($this->tmpNotWritableFolder, 0444);
         }
 
         $this->dbName = uniqid();
@@ -50,6 +55,26 @@ class tdbDatabaseTest extends \PHPUnit_Framework_TestCase
         parent::tearDown();
     }
 
+    public function testOpenUnwritableDir()
+    {
+        $this->setExpectedException('TextDb\Exception\NotWritableException');
+
+        $this->tdb->tdb($this->tmpNotWritableFolder, "database");
+    }
+
+    public function testOpenInvalidDir()
+    {
+        $this->setExpectedException('TextDb\Exception\InvalidDirectoryException');
+
+        $this->tdb->tdb("doesnt/exist", "database");
+    }
+
+    public function testOpenUnwritableDb()
+    {
+        $this->setExpectedException('TextDb\Exception\NotWritableException');
+
+        $this->tdb->tdb($this->tmpFolder, "notwritable");
+    }
 
     public function testCreateAndRemoveDatabase()
     {
