@@ -581,14 +581,12 @@ class tdb {
 		}
 
 		if(!$foundField) {
-			$this->sendError(E_USER_WARNING, "Cannot remove '$oldfield' field, it does not exist.", __LINE__);
-			return false;
+			throw new InvalidArgumentException("Cannot remove '$oldfield' field, it does not exist.");
 		}
 
 		//name, type, size
 		if($field[1] != "string" && $field[1] != "number" && $field[1] != "memo" && $field[1] != "id") {
-			$this->sendError(E_USER_ERROR, "New field type must be either string, number, memo, or id.", __LINE__);
-			return false;
+			throw new InvalidArgumentException("New field type must be either string, number, memo, or id.");
 		}
 
 		if($field[1] == "id" || $field[1] == 'memo') $field[2] = "7";

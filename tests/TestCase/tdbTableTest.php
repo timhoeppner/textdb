@@ -131,4 +131,32 @@ class tdbFieldTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals("", $record[0]["email"]);
     }
+
+    public function testEditFieldMissing()
+    {
+        $this->setExpectedException('TextDb\Exception\InvalidArgumentException');
+
+        $this->tdb->editField("test", "invalidfield", ["email", "string", 50]);
+    }
+
+    public function testEditFieldInvalidType()
+    {
+        $this->setExpectedException('TextDb\Exception\InvalidArgumentException');
+
+        $this->tdb->editField("test", "name", ["email", "blob", 50]);
+    }
+
+    public function testEditFieldToStringWithRecords()
+    {
+        // TODO possible other bug found here
+        $this->markTestSkipped();
+
+        $this->tdb->add("test", ["name" => "tim"]);
+
+        $this->tdb->editField("test", "name", ["email", "string", 50]);
+
+        $record = $this->tdb->get("test", 1);
+
+        // TODO check record has new field and old one is removed
+    }
 }
