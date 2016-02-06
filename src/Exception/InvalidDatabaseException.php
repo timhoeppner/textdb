@@ -8,6 +8,6 @@
 
 namespace TextDb\Exception;
 
-class DatabaseExistsException extends \Exception
+class InvalidDatabaseException extends \Exception
 {
 }

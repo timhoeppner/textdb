@@ -13,7 +13,8 @@ namespace TextDb;
 /**
  *
  */
-use TextDb\Exception\DatabaseExistsException;
+use TextDb\Exception\InvalidArgumentException;
+use TextDb\Exception\InvalidDatabaseException;
 use TextDb\Exception\InvalidDirectoryException;
 use TextDb\Exception\InvalidFilePointerException;
 use TextDb\Exception\NotWritableException;
@@ -146,7 +147,7 @@ class tdb {
 		}
 
 		if(file_exists($dir.$filename)) {
-			throw new DatabaseExistsException();
+			throw new InvalidDatabaseException();
 		}
 
 		if(is_dir($dir)) {
@@ -400,13 +401,11 @@ class tdb {
 		if(substr($table, 0, (strlen($this->Db) -4) != substr($this->Db, 0, -4))) $table = substr($this->Db, 0, -4).'_'.$table;
 
 		if(!is_array($fields)) {
-			$this->sendError(E_USER_ERROR, "\$fields must be an array", __LINE__);
-			return false;
+			throw new InvalidArgumentException("Fields must be an array");
 		} else {
 			// check if table already exists
 			if(file_exists($this->workingDir.$table) || in_array($table, $this->Tables)) {
-				$this->sendError(E_WARNING, "Table ($this->workingDir$table) already exists", __LINE__);
-				return false;
+				throw new InvalidArgumentException("Table ($this->workingDir$table) already exists");
 			}
 
 			// start building the header
@@ -415,8 +414,7 @@ class tdb {
 
 			for($i=0;$i<count($fields);$i++) {
 				if($fields[$i][1] != "string" && $fields[$i][1] != "number" && $fields[$i][1] != "memo" && $fields[$i][1] != "id") {
-					$this->sendError(E_USER_ERROR, "Field type must be either string, number, memo, or id.", __LINE__);
-					return false;
+					throw new InvalidArgumentException("Field type must be either string, number, memo, or id.");
 				}
 
 				if($fields[$i][1] == "id" || $fields[$i][1] == 'memo') $fields[$i][2] = "7";
@@ -470,17 +468,19 @@ class tdb {
 
 		for($i=1;$i<=$cHeader;$i++) {
 			if($header[$i]["fName"] == $field[0]) {
-				$this->sendError(E_USER_WARNING, "Field already exists, aborting...", __LINE__);
-				return false;
+				throw new InvalidArgumentException("Field already exists");
 			}
 		}
 
 		$cHeader += 1; // for the new field
 
+		if (empty($field[1])) {
+			throw new InvalidArgumentException("Missing field type");
+		}
+
 		//name, type, size
 		if($field[1] != "string" && $field[1] != "number" && $field[1] != "memo" && $field[1] != "id") {
-			$this->sendError(E_USER_ERROR, "Field type must be either string, number, memo, or id.", __LINE__);
-			return false;
+			throw new InvalidArgumentException("Field type must be either string, number, memo, or id.");
 		}
 
 		if($field[1] == "id" || $field[1] == "memo") $field[2] = "7";

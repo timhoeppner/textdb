@@ -87,7 +87,7 @@ class tdbDatabaseTest extends \PHPUnit_Framework_TestCase
 
     public function testCreateDatabaseAlreadyExists()
     {
-        $this->setExpectedException('\TextDb\Exception\DatabaseExistsException');
+        $this->setExpectedException('\TextDb\Exception\InvalidDatabaseException');
 
         $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
         $this->tdb->createDatabase($this->tmpFolder, $this->dbName);
