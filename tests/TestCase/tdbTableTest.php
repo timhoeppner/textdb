@@ -76,4 +76,54 @@ class tdbTableTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(3, $this->tdb->getNumberOfRecords("test"));
     }
+
+    public function testGetTableList()
+    {
+        $this->assertEquals([], $this->tdb->getTableList());
+
+        $this->tdb->createTable("test", [["id", "id"], ["name", "string", 50]]);
+
+        $this->assertEquals([$this->dbName."_test"], $this->tdb->getTableList());
+
+        $this->tdb->createTable("test2", [["id", "id"], ["name", "string", 50]]);
+
+        $this->assertEquals([$this->dbName."_test", $this->dbName."_test2"], $this->tdb->getTableList());
+
+        $this->tdb->removeTable("test");
+
+        $this->assertEquals(true, in_array($this->dbName."_test2", $this->tdb->getTableList()));
+    }
+
+    public function testGetFieldList()
+    {
+        $this->tdb->createTable("test", [["id", "id"], ["name", "string", 50]]);
+        $this->tdb->setFp("test", "test");
+
+        $idField = [
+            "fName" => "id",
+            "fType" => "id",
+            "fLength" => 7
+        ];
+
+        $nameField = [
+            "fName" => "name",
+            "fType" => "string",
+            "fLength" => 50
+        ];
+
+        $this->assertEquals(true, in_array($idField, $this->tdb->getFieldList("test")));
+        $this->assertEquals(true, in_array($nameField, $this->tdb->getFieldList("test")));
+    }
+
+    public function testSetFpInvalidTable()
+    {
+        $this->setExpectedException('TextDb\Exception\InvalidTableException');
+
+        $this->tdb->setFp("test", "invalidtable");
+    }
+
+    public function testCleanUp()
+    {
+        $this->tdb->cleanUp();
+    }
 }

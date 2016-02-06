@@ -229,6 +229,8 @@ class tdb {
 	 */
 	function getTableList() {
 		$this->check();
+
+		// TODO shouldn't this just return the table names, not prefixed with database
 		return $this->Tables;
 	}
 
@@ -352,8 +354,7 @@ class tdb {
 			unset($this->_ref[$fp]);
 			unset($this->_firstBlankMemoBlockRef[$fp]);
 		} else {
-			$this->sendError(E_WARNING, "$table is not a valid table in $this->Db", __LINE__);
-			return false;
+			throw new InvalidTableException();
 		}
 		return true;
 	}
