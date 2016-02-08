@@ -706,8 +706,7 @@ class tdb {
 		}
 
 		if(!$foundField) {
-			$this->sendError(E_USER_WARNING, "Cannot remove '$field' field, it does not exist.", __LINE__);
-			return false;
+			throw new InvalidArgumentException("Cannot remove '$field' field, it does not exist.");
 		}
 
 		// start building the header

@@ -159,4 +159,11 @@ class tdbFieldTest extends \PHPUnit_Framework_TestCase
 
         // TODO check record has new field and old one is removed
     }
+
+    public function testRemoveFieldMissing()
+    {
+        $this->setExpectedException('TextDb\Exception\InvalidArgumentException');
+
+        $this->tdb->removeField("test", "invalidfield");
+    }
 }
