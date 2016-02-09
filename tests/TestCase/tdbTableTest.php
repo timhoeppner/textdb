@@ -166,4 +166,15 @@ class tdbFieldTest extends \PHPUnit_Framework_TestCase
 
         $this->tdb->removeField("test", "invalidfield");
     }
+
+    public function testRemoveField()
+    {
+        $this->tdb->add("test", ["name" => "tim"]);
+        $this->tdb->removeField("test", "name");
+
+        $record = $this->tdb->get("test", 1);
+
+        $this->assertEquals(1, $record[0]["id"]);
+        $this->assertEquals(false, isset($record[0]["name"]));
+    }
 }
