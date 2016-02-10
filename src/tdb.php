@@ -785,8 +785,7 @@ class tdb {
 		$header = array();
 
 		if(FALSE === ($fileId = $this->fileIdById($fp, $id))) {
-			$this->sendError(E_WARNING, "Unable to execute edit().  Unable to retrieve fileID", __LINE__);
-			return false;
+			throw new InvalidArgumentException("Unable to execute edit().  Unable to retrieve fileID");
 		}
 
 		$this->readHeader($fp, $header);
@@ -844,8 +843,7 @@ class tdb {
 		$this->check($fp);
 
 		if(FALSE === ($fileId = $this->fileIdById($fp, $id))) {
-			$this->sendError(E_WARNING, "Unable to execute delete().  Unable to retrieve fileID", __LINE__);
-			return false;
+			throw new InvalidArgumentException("Unable to execute delete().  Unable to retrieve fileID");
 		}
 
 		$header = array();
